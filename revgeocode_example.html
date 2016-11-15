@@ -1,0 +1,102 @@
+<!--
+Drop Pin Sample 
+By OneMap Dev Team
+-->
+
+			<html>
+				<head>
+					<title>Reverse Geocoding Example (Drop Pin)</title>
+					<!--Calling libraries from various cdns-->
+					<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+					<script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+					<script type="text/javascript" src="https://code.jquery.com/jquery-git2.min.js"></script>
+					<script type="text/javascript" src="config.js"></script>
+				</head>
+				<body>
+					<h1>Drop Pin Example (DoubleClick on Map)</h1>
+						<div id='mapdiv' style='height:800px;'></div>
+				</body>
+				<script>
+					var marker;
+					//Setting the center point of the map
+					var center = L.bounds([1.56073, 104.11475], [1.16, 103.502]).getCenter();
+
+					var map = L.map('mapdiv').setView([center.x, center.y], 12);
+					//Setting the bound of your map
+					map.setMaxBounds([[1.56073, 104.11475],[1.16, 103.502]]);
+					//Calling location of the map
+					var basemap = L.tileLayer('http://maps-{s}.onemap.sg/v3/Default/{z}/{x}/{y}.png', {
+						attribution: 'Map data © contributors, <a href="http://SLA.gov.sg">Singapore Land Authority</a>',
+						maxZoom: 18,
+						minZoom:11
+					});
+					//Add basemap to the map div
+					basemap.addTo(map);
+					//Enable doubleclick on the map and associating it with onClick method
+					map.on('dblclick', onClick);
+
+					function onClick(e){
+
+						if(marker != null){
+									map.removeLayer(marker);
+						}
+
+						//Set marker location
+						var markerLocation = new L.LatLng(parseFloat(e.latlng.lat), parseFloat(e.latlng.lng));
+						
+						//Create the marker based on the latlng
+						marker = new L.Marker(markerLocation);
+
+						//This is to do an ajax call to find the location information. (Building or road)
+						var url = "https://developers.onemap.sg/privateapi/commonsvc/revgeocode?token="+config.access_token+"&location="+e.latlng.lat+","+e.latlng.lng;
+
+						$.ajax({url: url, success: function(result){
+
+					         	var jsonResult = result;
+					         	console.log(jsonResult)
+						        if(jsonResult.GeocodeInfo[0] != undefined){
+
+						        	var rgResult = jsonResult.GeocodeInfo[0];
+
+						        	//Variable to store popup display
+						        	var popupDisplay = "";
+
+						        	if(rgResult.BUILDINGNAME != undefined && rgResult.BUILDINGNAME != null){
+
+						        		var bName = rgResult.BUILDINGNAME;
+
+						        		if(bName != "NIL" && bName != "null"){
+						        			popupDisplay += "<b>BUILDING NAME:</b> " + bName + ",<br><br> ";
+						        		}
+
+						        		popupDisplay +=  "<b>ADDRESS</b>: BLK "+ rgResult.BLOCK + ", "+ rgResult.ROAD + "  S"+rgResult.POSTALCODE;
+
+						        	}else if(rgResult.ROAD != undefined){
+						        		popupDisplay += "<b>ROAD NAME</b>: " + rgResult.ROAD;
+						        	}else{
+						        		popupDisplay += "There is no either building or road at current location.";
+						        	}
+
+
+						        	//Customized options for your popup(s)
+							        var customOptions ={
+												        'minWidth': 200,
+												        'maxWidth': 300,
+												        'maxHeight' : 500
+												       }
+									
+									
+									marker.bindPopup(popupDisplay,customOptions);
+					        		map.addLayer(marker);
+					        		marker.openPopup();
+				        		}
+			        		
+
+					    	}});
+
+						}
+						
+
+				</script>
+			</body>
+		</html>

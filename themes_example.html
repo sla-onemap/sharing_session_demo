@@ -1,0 +1,107 @@
+<!--
+Load Themes Sample 
+By OneMap Dev Team
+-->
+	<html>
+				<head>
+					<title>Load Themes Example</title>
+					<!--Calling libraries from various cdns-->
+					<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+					<script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+					
+					<script type="text/javascript" src="https://code.jquery.com/jquery-git2.min.js"></script>
+					<script type="text/javascript" src="config.js"></script>
+				</head>
+				<body>
+					<h1>Load Themes Example</h1>
+						<div id='mapdiv' style='height:800px;'></div>
+				</body>
+				<script>
+					
+					//Setting the center point of the map
+					var center = L.bounds([1.56073, 104.11475], [1.16, 103.502]).getCenter();
+
+					var map = L.map('mapdiv').setView([center.x, center.y], 12);
+					//Setting the bound of your map
+					map.setMaxBounds([[1.56073, 104.11475],[1.16, 103.502]]);
+					//Calling location of the map
+					var basemap = L.tileLayer('http://maps-{s}.onemap.sg/v3/Default/{z}/{x}/{y}.png', {
+						attribution: 'Map data © contributors, <a href="http://SLA.gov.sg">Singapore Land Authority</a>',
+						maxZoom: 18,
+						minZoom: 11
+					});
+					//Add basemap to the map div
+					basemap.addTo(map);
+					//Call function to load themes onto the map
+					loadThemes();
+					
+					function loadThemes(){
+
+						
+
+						//This is to do an ajax call to get all community centers in Singapore
+						var url = "https://developers.onemap.sg/privateapi/themesvc/retrieveTheme?queryName=communityclubs&token="+config.access_token;
+
+						$.ajax({url: url, success: function(result){
+								// initiatize a theme layer group to store all theme markers
+								var themeLayerGroup = new L.layerGroup();
+								
+					         	var jsonResult = result;
+
+					         	if (jsonResult.SrchResults != "" || jsonResult.SrchResults != undefined ){
+					         		//First record is feature count hence loop from 2nd record onwards.
+					         		for(i=1;i<jsonResult.SrchResults.length;i++){
+					         			var eachCommunityClub = jsonResult.SrchResults[i];
+
+					         			/*Current Projection is in XY (SVY21 Projection). 
+					         			Please convert it into latlng(EPSG 4326) using 
+					         			our properiety library developed by us.*/
+
+					         			var xy_list = eachCommunityClub.LatLng.split(",");
+					         			var x = xy_list[0];
+					         			var y = xy_list[1];
+					         			
+					         			//Set marker location
+										var markerLocation = new L.LatLng(parseFloat(x),parseFloat(y));
+								
+										//Create the marker based on the latlng and icon given
+										var myIcon = L.icon({
+														    iconUrl: "http://www.onemap.sg/icons/COMMUNITYCLUBS/"+eachCommunityClub.ICON_NAME,
+														    iconSize: [28, 28],
+														    iconAnchor: [18, 30],
+														    showAnchor: [4,62],
+														    popupAnchor: [-3, -25]
+														});
+
+
+										var marker = new L.Marker(markerLocation, {icon: myIcon});
+
+										
+										//Customized options for your popup(s)
+								        var customOptions ={
+													        'minWidth': 100,
+													        'maxWidth': 300,
+													        'maxHeight' : 500
+													       }
+										
+										//Add popup display
+										var popupDisplay = eachCommunityClub.NAME;
+
+										marker.bindPopup(popupDisplay,customOptions);
+										//Add to layer 	
+										themeLayerGroup.addLayer(marker);
+					         		}
+					         		//Add to map
+					         		map.addLayer(themeLayerGroup);
+					         		
+					         	}
+			        		
+
+					    	}});
+
+						}
+						
+
+				</script>
+			</body>
+		</html>
